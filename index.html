@@ -58,10 +58,33 @@
           </button>
         </div>
 
-        <button type="submit" class="btn-submit">Искать</button>
+        <button type="submit" class="btn-submit" id="submitBtn">Искать</button>
       </form>
 
       <p class="hint" id="modeHint">Введи ID фильма с Кинопоиска и нажми «Искать».</p>
+
+      <!-- Result card for ID search -->
+      <div id="result" class="result" hidden>
+        <div class="result__card">
+          <div class="result__poster-wrap">
+            <img id="resultPoster" class="result__poster" src="" alt="" loading="lazy">
+            <div id="resultPosterPlaceholder" class="result__poster-placeholder" hidden>Нет постера</div>
+          </div>
+          <div class="result__info">
+            <h2 id="resultTitle" class="result__title"></h2>
+            <p id="resultOriginal" class="result__original"></p>
+            <div class="result__meta">
+              <span id="resultYear" class="result__year"></span>
+              <span id="resultRating" class="result__rating" hidden></span>
+            </div>
+            <p id="resultGenres" class="result__genres"></p>
+            <div class="result__actions">
+              <a id="resultOpen" class="btn-open" href="#" target="_blank" rel="noopener noreferrer">Открыть на kinopoisk.ws</a>
+            </div>
+          </div>
+        </div>
+        <p id="resultError" class="result__error" hidden></p>
+      </div>
     </main>
 
     <footer class="footer">
