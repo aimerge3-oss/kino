@@ -1,43 +1,61 @@
-# Kino
+# Kino (kinopoisk.ai)
 
-Простой и быстрый фронтенд для поиска фильмов и сериалов на [kinopoisk.ws](https://www.kinopoisk.ws).
+Каталог фильмов и сериалов на данных Кинопоиска.
 
 ## Возможности
 
-- **Поиск по ID** — открывает страницу фильма `/film/{id}/`
-- **Поиск по названию** — `/searchname.php?name=...`
-- **Поиск торрентов** — `/torrent.php?name=...`
+- Главная: поиск, популярное, топ рейтинга
+- Страница фильма: постер, описание, рейтинг, трейлер, **слот под плеер**
+- Поиск по названию и по ID
+- Похожие фильмы
 
-Всё работает клиентски, без бэкенда. Форма открывает результаты в новой вкладке.
+## Плеер
 
-## Стек
+На странице `film.html` есть блок `#player`.
 
-- Чистый HTML + CSS + Vanilla JS
-- Тёмная тема в духе кино (акцент `#e50914`)
-- Адаптив, доступность (labels, focus states)
+Ты можешь вставить свой плеер так:
 
-## Запуск
-
-Просто открой `index.html` в браузере или задеплой на любой статический хостинг (GitHub Pages, Cloudflare Pages, Netlify и т.д.).
-
-```bash
-# Локально
-npx serve .
+```html
+<div class="player" id="player" data-kinopoisk-id="326">
+  <iframe src="ТВОЙ_URL" allowfullscreen allow="autoplay"></iframe>
+</div>
 ```
+
+Или через JS после загрузки фильма:
+
+```js
+window.initPlayer = function ({ id, title, playerEl }) {
+  // твой код плеера
+  playerEl.innerHTML = `<iframe src="..." ...></iframe>`;
+};
+```
+
+В `film.js` уже выставляются `data-kinopoisk-id` и `data-title` на `#player`.
+
+## API-ключ
+
+1. Зарегистрируйся на [kinopoiskapiunofficial.tech](https://kinopoiskapiunofficial.tech)
+2. На сайте нажми **Ключ** в шапке и вставь ключ
+
+Ключ хранится в `localStorage` браузера.
 
 ## Структура
 
 ```
-├── index.html
-├── copyright.html
-├── css/
-│   └── style.css
-├── js/
-│   └── main.js
-└── README.md
+index.html      — главная
+film.html       — страница фильма (?id=326)
+css/style.css
+js/
+  api.js        — запросы к API
+  ui.js         — карточки, модалка ключа
+  home.js       — главная
+  film.js       — страница фильма
 ```
 
-## Дизайн
+## Деплой
 
-UI сделан с упором на чистоту и читаемость (без градиентов, свечений и «AI-slop»).
-Цветовая схема и типографика вдохновлены классическими кино-сервисами.
+Статический сайт. Можно GitHub Pages, Cloudflare Pages, Netlify или свой сервер на `kinopoisk.ai`.
+
+```bash
+npx serve .
+```

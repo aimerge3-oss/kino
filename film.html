@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#e50914">
+  <title>Фильм — Kino</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>▶</text></svg>">
+</head>
+<body>
+  <div class="layout">
+    <header class="header">
+      <a href="./" class="logo">
+        <span class="logo__icon">▶</span>
+        <span class="logo__text">Kino</span>
+      </a>
+      <form class="header-search" id="headerSearch" role="search">
+        <input type="search" id="headerInput" placeholder="Название или ID..." autocomplete="off">
+        <button type="submit" aria-label="Искать">⌕</button>
+      </form>
+      <button type="button" class="btn-key" id="btnKey" title="API-ключ">Ключ</button>
+    </header>
+
+    <main class="main film-page" id="filmPage">
+      <div class="film-loading" id="filmLoading">Загрузка…</div>
+
+      <div id="filmContent" hidden>
+        <!-- PLAYER SLOT — сюда вставляется плеер -->
+        <div class="player-wrap">
+          <div class="player" id="player">
+            <!--
+              МЕСТО ДЛЯ ПЛЕЕРА
+              Вставь сюда свой iframe / video / скрипт плеера.
+              Пример:
+              <iframe src="ТВОЙ_URL_ПЛЕЕРА" allowfullscreen></iframe>
+            -->
+            <div class="player__placeholder" id="playerPlaceholder">
+              <span class="player__icon">▶</span>
+              <p>Плеер</p>
+              <p class="player__hint">Вставь свой плеер в <code>#player</code></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="film-layout">
+          <div class="film-poster-col">
+            <img id="filmPoster" class="film-poster" src="" alt="">
+          </div>
+          <div class="film-info">
+            <h1 id="filmTitle" class="film-title"></h1>
+            <p id="filmOriginal" class="film-original"></p>
+            <div class="film-meta" id="filmMeta"></div>
+            <div class="film-rating" id="filmRating" hidden></div>
+            <p id="filmGenres" class="film-genres"></p>
+            <p id="filmDescription" class="film-desc"></p>
+
+            <div class="film-actions">
+              <a id="filmTrailer" class="btn-primary" href="#" target="_blank" rel="noopener" hidden>Трейлер</a>
+              <a id="filmKp" class="btn-outline" href="#" target="_blank" rel="noopener">Кинопоиск</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI / improved description slot -->
+        <section class="section ai-block" id="aiBlock" hidden>
+          <h2>Улучшенное описание</h2>
+          <div id="aiText" class="ai-text"></div>
+        </section>
+
+        <section class="section" id="similarSection" hidden>
+          <h2>Похожие</h2>
+          <div id="similarGrid" class="grid"></div>
+        </section>
+      </div>
+
+      <p id="filmError" class="error" hidden></p>
+    </main>
+
+    <footer class="footer">
+      <a href="./copyright.html">Правообладателям</a>
+      <span>·</span>
+      <span>kinopoisk.ai</span>
+      <span>·</span>
+      <span>2026</span>
+    </footer>
+  </div>
+
+  <div id="keyModal" class="modal" hidden>
+    <div class="modal__box">
+      <h3>API-ключ Кинопоиска</h3>
+      <p>Бесплатный ключ: <a href="https://kinopoiskapiunofficial.tech" target="_blank" rel="noopener">kinopoiskapiunofficial.tech</a></p>
+      <input type="text" id="keyInput" placeholder="Вставь ключ сюда" autocomplete="off">
+      <div class="modal__actions">
+        <button type="button" class="btn-primary" id="keySave">Сохранить</button>
+        <button type="button" class="btn-text" id="keyCancel">Отмена</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/film.js"></script>
+</body>
+</html>
