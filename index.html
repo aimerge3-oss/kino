@@ -3,34 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#e50914">
-  <meta name="description" content="Kino — каталог фильмов и сериалов. Поиск, карточки, трейлеры.">
-  <title>Kino — фильмы и сериалы</title>
+  <meta name="theme-color" content="#0c0c0e">
+  <meta name="description" content="Kino — каталог фильмов и сериалов">
+  <title>Kino</title>
   <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>▶</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23e50914'/><polygon points='38,28 38,72 72,50' fill='white'/></svg>">
 </head>
 <body>
   <div class="layout">
     <header class="header">
       <a href="./" class="logo">
-        <span class="logo__icon">▶</span>
+        <span class="logo__icon" aria-hidden="true">▶</span>
         <span class="logo__text">Kino</span>
       </a>
       <form class="header-search" id="headerSearch" role="search">
-        <input type="search" id="headerInput" placeholder="Название или ID..." autocomplete="off">
+        <input type="search" id="headerInput" placeholder="Название или ID" autocomplete="off">
         <button type="submit" aria-label="Искать">⌕</button>
       </form>
-      <button type="button" class="btn-key" id="btnKey" title="API-ключ">Ключ</button>
+      <button type="button" class="btn-key" id="btnKey">Ключ</button>
     </header>
 
     <main class="main">
-      <!-- Hero search -->
       <section class="hero">
-        <h1>Смотри онлайн</h1>
-        <p class="hero__sub">Каталог фильмов и сериалов. Поиск по названию или ID Кинопоиска.</p>
+        <h1>Фильмы и сериалы</h1>
+        <p class="hero__sub">Поиск по названию или ID Кинопоиска</p>
         <form id="mainSearch" class="search-box">
-          <input type="search" id="mainInput" placeholder="Введи название или ID..." autocomplete="off" autofocus>
-          <button type="submit" class="btn-primary">Искать</button>
+          <input type="search" id="mainInput" placeholder="Название или ID" autocomplete="off" autofocus>
+          <button type="submit" class="btn-primary">Найти</button>
         </form>
         <div class="search-modes">
           <label><input type="radio" name="mode" value="name" checked> По названию</label>
@@ -38,7 +37,6 @@
         </div>
       </section>
 
-      <!-- Search results -->
       <section id="searchResults" class="section" hidden>
         <div class="section__head">
           <h2 id="resultsTitle">Результаты</h2>
@@ -49,7 +47,6 @@
         <p id="resultsError" class="error" hidden></p>
       </section>
 
-      <!-- Popular / Top -->
       <section class="section">
         <div class="section__head">
           <h2>Популярное</h2>
@@ -90,12 +87,11 @@
     </footer>
   </div>
 
-  <!-- API key modal -->
   <div id="keyModal" class="modal" hidden>
     <div class="modal__box">
-      <h3>API-ключ Кинопоиска</h3>
-      <p>Бесплатный ключ: <a href="https://kinopoiskapiunofficial.tech" target="_blank" rel="noopener">kinopoiskapiunofficial.tech</a></p>
-      <input type="text" id="keyInput" placeholder="Вставь ключ сюда" autocomplete="off">
+      <h3>API-ключ</h3>
+      <p>Бесплатный ключ на <a href="https://kinopoiskapiunofficial.tech" target="_blank" rel="noopener">kinopoiskapiunofficial.tech</a>. Хранится только в этом браузере.</p>
+      <input type="text" id="keyInput" placeholder="Ключ" autocomplete="off">
       <div class="modal__actions">
         <button type="button" class="btn-primary" id="keySave">Сохранить</button>
         <button type="button" class="btn-text" id="keyCancel">Отмена</button>
