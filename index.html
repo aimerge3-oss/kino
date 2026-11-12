@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#e50914">
+  <meta name="description" content="Быстрый поиск фильмов и сериалов на Кинопоиске. Открой по ID или названию.">
+  <meta name="robots" content="noindex">
+  <title>Kino — смотри онлайн</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>▶</text></svg>">
+</head>
+<body>
+  <div class="page">
+    <header class="site-header">
+      <a href="./" class="site-logo" aria-label="Kino — главная">
+        <span class="site-logo__icon" aria-hidden="true">▶</span>
+        <span class="site-logo__text">Kino</span>
+      </a>
+    </header>
+
+    <main class="main">
+      <section class="hero">
+        <h1 class="hero__title">Смотри онлайн</h1>
+        <p class="hero__desc">
+          Найди фильм или сериал на Кинопоиске.<br>
+          В ссылке замени <code>.ru</code> на <code>.ws</code>.
+        </p>
+        <p class="hero__example">
+          Пример: <span>www.kinopoisk.ws/film/8124/</span>
+        </p>
+      </section>
+
+      <form id="searchForm" class="search-form" method="get" target="_blank" novalidate>
+        <div class="search-form__field">
+          <label for="searchInput" class="visually-hidden">Запрос</label>
+          <input
+            type="number"
+            id="searchInput"
+            name="id"
+            class="search-form__input"
+            placeholder="ID Кинопоиска..."
+            inputmode="numeric"
+            autocomplete="off"
+            required
+          >
+        </div>
+
+        <div class="search-form__modes" role="group" aria-label="Режим поиска">
+          <button type="button" class="btn-mode is-active" data-mode="id" data-placeholder="ID Кинопоиска..." data-type="number" data-name="id" data-path="/">
+            По ID
+          </button>
+          <button type="button" class="btn-mode" data-mode="name" data-placeholder="Название фильма или сериала..." data-type="search" data-name="name" data-path="/searchname.php">
+            По названию
+          </button>
+          <button type="button" class="btn-mode" data-mode="torrent" data-placeholder="Название фильма или сериала..." data-type="search" data-name="name" data-path="/torrent.php">
+            Торренты
+          </button>
+        </div>
+
+        <button type="submit" class="btn-submit">Искать</button>
+      </form>
+
+      <p class="hint" id="modeHint">Введи ID фильма с Кинопоиска и нажми «Искать».</p>
+    </main>
+
+    <footer class="footer">
+      <nav class="footer__nav">
+        <a href="./copyright.html">Правообладателям</a>
+        <span class="footer__sep">·</span>
+        <span>2026</span>
+        <span class="footer__sep">·</span>
+        <a href="./">Главная</a>
+      </nav>
+    </footer>
+  </div>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
