@@ -1,0 +1,13 @@
+name = "kino"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Статику удобнее отдавать через Cloudflare Pages,
+# а этот worker — только как API на том же домене (Route)
+# или отдельным subdomain api.kino...
+#
+# Secret:
+#   npx wrangler secret put KP_API_KEY
+#
+# Пример route (в Dashboard → Workers → Triggers):
+#   kino.pozzistory666.workers.dev/api/*

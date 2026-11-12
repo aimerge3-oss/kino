@@ -16,10 +16,13 @@
   const mainSearch = document.getElementById('mainSearch');
   const mainInput = document.getElementById('mainInput');
 
-  function showKeyNeeded(el) {
+  function keyHint(el) {
     if (!el) return;
     el.hidden = false;
-    el.innerHTML = 'Нужен API-ключ. Нажми «Ключ» в шапке и вставь ключ с <a href="https://kinopoiskapiunofficial.tech" target="_blank" rel="noopener">kinopoiskapiunofficial.tech</a>';
+    el.innerHTML =
+      'Нужен API. Либо настрой Cloudflare Worker с секретом <code>KP_API_KEY</code>, ' +
+      'либо нажми «Ключ» и вставь ключ с ' +
+      '<a href="https://kinopoiskapiunofficial.tech" target="_blank" rel="noopener">kinopoiskapiunofficial.tech</a>';
   }
 
   function fillGrid(grid, items) {
@@ -38,7 +41,7 @@
       if (popularError) popularError.hidden = true;
     } catch (e) {
       popularGrid.innerHTML = '';
-      if (e.code === 'NO_KEY' || e.code === 'BAD_KEY') showKeyNeeded(popularError);
+      if (e.code === 'NO_KEY' || e.code === 'BAD_KEY') keyHint(popularError);
       else if (popularError) {
         popularError.hidden = false;
         popularError.textContent = 'Не удалось загрузить популярное';
@@ -51,7 +54,7 @@
       if (topError) topError.hidden = true;
     } catch (e) {
       topGrid.innerHTML = '';
-      if (e.code === 'NO_KEY' || e.code === 'BAD_KEY') showKeyNeeded(topError);
+      if (e.code === 'NO_KEY' || e.code === 'BAD_KEY') keyHint(topError);
       else if (topError) {
         topError.hidden = false;
         topError.textContent = 'Не удалось загрузить топ';
@@ -63,7 +66,8 @@
     searchResults.hidden = false;
     resultsEmpty.hidden = true;
     resultsError.hidden = true;
-    resultsGrid.innerHTML = '<div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>';
+    resultsGrid.innerHTML =
+      '<div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>';
 
     if (mode === 'id' || /^\d+$/.test(query)) {
       location.href = 'film.html?id=' + query.replace(/\D/g, '');
@@ -85,7 +89,7 @@
       resultsGrid.innerHTML = '';
       resultsError.hidden = false;
       if (e.code === 'NO_KEY' || e.code === 'BAD_KEY') {
-        resultsError.innerHTML = 'Нужен API-ключ. Нажми «Ключ» в шапке.';
+        keyHint(resultsError);
       } else {
         resultsError.textContent = 'Ошибка поиска. Попробуй позже.';
       }
@@ -109,7 +113,6 @@
     });
   }
 
-  // ?q= from URL
   const params = new URLSearchParams(location.search);
   const q = params.get('q');
   if (q) {

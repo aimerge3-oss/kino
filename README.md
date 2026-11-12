@@ -1,61 +1,43 @@
-# Kino (kinopoisk.ai)
+# Kino
 
-Каталог фильмов и сериалов на данных Кинопоиска.
+Каталог фильмов и сериалов. Данные — Kinopoisk Unofficial API через Cloudflare Worker с кэшем.
 
-## Возможности
+## Почему Worker
 
-- Главная: поиск, популярное, топ рейтинга
-- Страница фильма: постер, описание, рейтинг, трейлер, **слот под плеер**
-- Поиск по названию и по ID
-- Похожие фильмы
+Лимит API ~500 запросов/сутки. Без кэша этого не хватает.
+
+Worker:
+- хранит `KP_API_KEY` в Secrets (не в браузере)
+- кэширует популярное/топ на 6 часов, карточки фильмов на 24 часа
+- все посетители бьют в кэш, а не в API
+
+## Деплой API (Worker)
+
+```bash
+npm i -g wrangler
+npx wrangler login
+npx wrangler deploy
+npx wrangler secret put KP_API_KEY
+# вставь ключ с https://kinopoiskapiunofficial.tech
+```
+
+Проверка: `https://твой-worker.workers.dev/api/health` → `{"ok":true,"hasKey":true}`
+
+### Связка со статикой
+
+**Вариант A — Cloudflare Pages + Worker route**
+1. Pages: подключи этот репозиторий, output `/`
+2. Worker: route `твой-домен/api/*` → этот worker
+
+**Вариант B — один Worker**  
+Отдавай статику через Workers Assets / Pages, API на `/api/*`.
+
+Фронт сам ходит на `/api/...`. Если прокси нет — fallback на ключ в «Ключ» (localStorage).
 
 ## Плеер
 
-На странице `film.html` есть блок `#player`.
+На `film.html` блок `#player` — вставь iframe или свой скрипт.
 
-Ты можешь вставить свой плеер так:
+## LiveInternet
 
-```html
-<div class="player" id="player" data-kinopoisk-id="326">
-  <iframe src="ТВОЙ_URL" allowfullscreen allow="autoplay"></iframe>
-</div>
-```
-
-Или через JS после загрузки фильма:
-
-```js
-window.initPlayer = function ({ id, title, playerEl }) {
-  // твой код плеера
-  playerEl.innerHTML = `<iframe src="..." ...></iframe>`;
-};
-```
-
-В `film.js` уже выставляются `data-kinopoisk-id` и `data-title` на `#player`.
-
-## API-ключ
-
-1. Зарегистрируйся на [kinopoiskapiunofficial.tech](https://kinopoiskapiunofficial.tech)
-2. На сайте нажми **Ключ** в шапке и вставь ключ
-
-Ключ хранится в `localStorage` браузера.
-
-## Структура
-
-```
-index.html      — главная
-film.html       — страница фильма (?id=326)
-css/style.css
-js/
-  api.js        — запросы к API
-  ui.js         — карточки, модалка ключа
-  home.js       — главная
-  film.js       — страница фильма
-```
-
-## Деплой
-
-Статический сайт. Можно GitHub Pages, Cloudflare Pages, Netlify или свой сервер на `kinopoisk.ai`.
-
-```bash
-npx serve .
-```
+Официальный код в `js/liveinternet.js`, бейдж в футере.
