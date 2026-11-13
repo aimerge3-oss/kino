@@ -20,7 +20,6 @@
   const similarSection = document.getElementById('similarSection');
   const similarGrid = document.getElementById('similarGrid');
   const player = document.getElementById('player');
-  const playerPlaceholder = document.getElementById('playerPlaceholder');
 
   function showError(msg) {
     loading.hidden = true;
@@ -50,7 +49,6 @@
         originalEl.hidden = true;
       }
 
-      // Meta: year · type · length
       const bits = [];
       if (data.year) bits.push(data.year);
       if (data.type === 'TV_SERIES' || data.type === 'MINI_SERIES') bits.push('сериал');
@@ -58,34 +56,36 @@
       if (data.filmLength) bits.push(data.filmLength + ' мин');
       metaEl.textContent = bits.join(' · ');
 
-      // Rating
       if (data.ratingKinopoisk) {
-        ratingEl.textContent = '★ ' + data.ratingKinopoisk + (data.ratingKinopoiskVoteCount ? ' (' + data.ratingKinopoiskVoteCount + ')' : '');
+        ratingEl.textContent =
+          '★ ' +
+          data.ratingKinopoisk +
+          (data.ratingKinopoiskVoteCount
+            ? ' (' + data.ratingKinopoiskVoteCount + ')'
+            : '');
         ratingEl.hidden = false;
       } else if (data.ratingImdb) {
         ratingEl.textContent = 'IMDb ' + data.ratingImdb;
         ratingEl.hidden = false;
       }
 
-      // Genres + countries
       const genres = (data.genres || []).map((g) => g.genre).join(', ');
       const countries = (data.countries || []).map((c) => c.country).join(', ');
       genresEl.textContent = [genres, countries].filter(Boolean).join(' · ');
 
-      // Description
       descEl.textContent = data.description || data.shortDescription || '';
 
-      // Poster
       const posterUrl = data.posterUrl || data.posterUrlPreview;
       if (posterUrl) {
         poster.src = posterUrl;
         poster.alt = title;
+        poster.onerror = function () {
+          this.style.display = 'none';
+        };
       }
 
-      // Kinopoisk link
       kpBtn.href = 'https://www.kinopoisk.ru/film/' + id + '/';
 
-      // Trailer
       try {
         const vids = await KP.videos(id);
         const items = vids.items || [];
@@ -100,16 +100,12 @@
         }
       } catch (_) {}
 
-      // Player slot: expose film id for external player scripts
       player.dataset.kinopoiskId = id;
       player.dataset.title = title;
-      // Example hook for your player:
-      // window.initPlayer && window.initPlayer({ id, title, playerEl: player });
 
       loading.hidden = true;
       content.hidden = false;
 
-      // Similars
       try {
         const sim = await KP.similars(id);
         const list = (sim.items || []).slice(0, 12);
@@ -119,8 +115,10 @@
         }
       } catch (_) {}
     } catch (e) {
-      if (e.code === 'NO_KEY' || e.code === 'BAD_KEY') {
-        showError('Нужен API-ключ. Нажми «Ключ» в шапке и вставь ключ с <a href="https://kinopoiskapiunofficial.tech" target="_blank" rel="noopener">kinopoiskapiunofficial.tech</a>');
+      if (e.code === 'NO_KEY') {
+        showError(
+          'API не настроен. Нужен KP_API_KEY в Cloudflare Worker. <a href="./">На главную</a>'
+        );
       } else if (e.code === 'NOT_FOUND') {
         showError('Фильм не найден. <a href="./">На главную</a>');
       } else {

@@ -16,13 +16,10 @@
   const mainSearch = document.getElementById('mainSearch');
   const mainInput = document.getElementById('mainInput');
 
-  function keyHint(el) {
+  function showApiError(el, msg) {
     if (!el) return;
     el.hidden = false;
-    el.innerHTML =
-      'Нужен API. Либо настрой Cloudflare Worker с секретом <code>KP_API_KEY</code>, ' +
-      'либо нажми «Ключ» и вставь ключ с ' +
-      '<a href="https://kinopoiskapiunofficial.tech" target="_blank" rel="noopener">kinopoiskapiunofficial.tech</a>';
+    el.textContent = msg || 'Не удалось загрузить данные';
   }
 
   function fillGrid(grid, items) {
@@ -36,28 +33,28 @@
 
   async function loadCollections() {
     try {
-      const pop = await KP.top('TOP_100_POPULAR_FILMS', 1);
+      const pop = await KP.top('TOP_POPULAR_ALL', 1);
       fillGrid(popularGrid, (pop.items || []).slice(0, 12));
       if (popularError) popularError.hidden = true;
     } catch (e) {
       popularGrid.innerHTML = '';
-      if (e.code === 'NO_KEY' || e.code === 'BAD_KEY') keyHint(popularError);
-      else if (popularError) {
-        popularError.hidden = false;
-        popularError.textContent = 'Не удалось загрузить популярное';
+      if (e.code === 'NO_KEY') {
+        showApiError(popularError, 'API не настроен. Нужен KP_API_KEY в Cloudflare Worker.');
+      } else {
+        showApiError(popularError, 'Не удалось загрузить популярное');
       }
     }
 
     try {
-      const top = await KP.top('TOP_250_BEST_FILMS', 1);
+      const top = await KP.top('TOP_250_MOVIES', 1);
       fillGrid(topGrid, (top.items || []).slice(0, 12));
       if (topError) topError.hidden = true;
     } catch (e) {
       topGrid.innerHTML = '';
-      if (e.code === 'NO_KEY' || e.code === 'BAD_KEY') keyHint(topError);
-      else if (topError) {
-        topError.hidden = false;
-        topError.textContent = 'Не удалось загрузить топ';
+      if (e.code === 'NO_KEY') {
+        showApiError(topError, 'API не настроен. Нужен KP_API_KEY в Cloudflare Worker.');
+      } else {
+        showApiError(topError, 'Не удалось загрузить топ');
       }
     }
   }
@@ -88,8 +85,9 @@
     } catch (e) {
       resultsGrid.innerHTML = '';
       resultsError.hidden = false;
-      if (e.code === 'NO_KEY' || e.code === 'BAD_KEY') {
-        keyHint(resultsError);
+      if (e.code === 'NO_KEY') {
+        resultsError.textContent =
+          'API не настроен. Нужен KP_API_KEY в Cloudflare Worker.';
       } else {
         resultsError.textContent = 'Ошибка поиска. Попробуй позже.';
       }
@@ -101,7 +99,9 @@
       e.preventDefault();
       const q = mainInput.value.trim();
       if (!q) return;
-      const mode = (document.querySelector('input[name="mode"]:checked') || {}).value || 'name';
+      const mode =
+        (document.querySelector('input[name="mode"]:checked') || {}).value ||
+        'name';
       doSearch(q, mode);
     });
   }
