@@ -6,24 +6,20 @@
 */
 
 :root {
-  /* Neutral ramp (warm black) */
   --bg: #0c0c0e;
   --bg-elevated: #141416;
   --bg-input: #1c1c1f;
   --border: #2c2c32;
   --border-strong: #3a3a42;
 
-  /* Text roles */
   --text: #ececef;
   --text-secondary: #a8a8b0;
   --text-tertiary: #6e6e76;
 
-  /* One accent */
   --accent: #e50914;
   --accent-hover: #ff1a24;
   --accent-muted: rgba(229, 9, 20, 0.14);
 
-  /* Scale: 4px */
   --r: 8px;
   --r-lg: 12px;
   --font: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -54,7 +50,7 @@ a:hover { text-decoration: underline; }
   flex-direction: column;
 }
 
-/* ——— Header: quiet chrome ——— */
+/* Header */
 .header {
   display: flex;
   align-items: center;
@@ -139,26 +135,7 @@ a:hover { text-decoration: underline; }
 
 .header-search button:hover { color: var(--text-secondary); }
 
-.btn-key {
-  flex-shrink: 0;
-  height: 36px;
-  padding: 0 12px;
-  font: inherit;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  cursor: pointer;
-}
-
-.btn-key:hover {
-  color: var(--text);
-  border-color: var(--border-strong);
-}
-
-/* ——— Main ——— */
+/* Main */
 .main {
   flex: 1;
   width: 100%;
@@ -167,7 +144,7 @@ a:hover { text-decoration: underline; }
   padding: 32px 24px 64px;
 }
 
-/* ——— Hero ——— */
+/* Hero */
 .hero {
   text-align: center;
   padding: 40px 0 48px;
@@ -231,7 +208,7 @@ a:hover { text-decoration: underline; }
 
 .search-modes input { accent-color: var(--accent); }
 
-/* ——— Buttons ——— */
+/* Buttons */
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -287,7 +264,7 @@ a:hover { text-decoration: underline; }
 
 .btn-text:hover { color: var(--text); }
 
-/* ——— Sections & grid ——— */
+/* Sections & grid */
 .section {
   margin-bottom: 48px;
 }
@@ -313,7 +290,7 @@ a:hover { text-decoration: underline; }
   gap: 20px 12px;
 }
 
-/* ——— Card: poster is the surface, chrome stays thin ——— */
+/* Card */
 .card {
   display: block;
   text-decoration: none;
@@ -390,7 +367,6 @@ a:hover { text-decoration: underline; }
   font-variant-numeric: tabular-nums;
 }
 
-/* Skeleton: no shimmer animation */
 .skeleton-card {
   aspect-ratio: 2 / 3;
   background: var(--bg-elevated);
@@ -412,7 +388,7 @@ a:hover { text-decoration: underline; }
   border-radius: var(--r);
 }
 
-/* ——— Film page ——— */
+/* Film page */
 .film-loading {
   text-align: center;
   padding: 80px 20px;
@@ -579,71 +555,7 @@ a:hover { text-decoration: underline; }
   font-size: 0.9375rem;
 }
 
-/* ——— Modal ——— */
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 24px;
-}
-
-.modal[hidden] { display: none; }
-
-.modal__box {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 24px;
-  width: 100%;
-  max-width: 400px;
-}
-
-.modal__box h3 {
-  margin: 0 0 8px;
-  font-size: 1.0625rem;
-  font-weight: 600;
-}
-
-.modal__box p {
-  margin: 0 0 16px;
-  font-size: 0.8125rem;
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
-
-.modal__box input {
-  width: 100%;
-  height: 40px;
-  padding: 0 12px;
-  font: inherit;
-  font-size: 0.875rem;
-  color: var(--text);
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  margin-bottom: 16px;
-  outline: none;
-}
-
-.modal__box input:focus {
-  border-color: var(--border-strong);
-}
-
-.modal__actions {
-  display: flex;
-  gap: 8px;
-}
-
-.modal__actions .btn-primary {
-  height: 40px;
-  font-size: 0.875rem;
-}
-
-/* ——— Footer ——— */
+/* Footer */
 .footer {
   padding: 20px 24px;
   text-align: center;
@@ -663,11 +575,79 @@ a:hover { text-decoration: underline; }
 
 .footer a:hover { color: var(--text-secondary); }
 
-/* ——— Responsive ——— */
+/* Responsive */
 @media (max-width: 640px) {
-  .header { padding: 0 16px; gap: 12px; }
-  .main { padding: 24px 16px 48px; }
-  .hero { padding: 24px 0 32px; }
+  .header {
+    padding: 0 16px;
+    gap: 12px;
+  }
+
+  .main {
+    padding: 20px 16px 48px;
+  }
+
+  .hero {
+    padding: 20px 0 28px;
+  }
+
+  .hero h1 {
+    font-size: 1.5rem;
+  }
+
+  .hero__sub {
+    margin-bottom: 20px;
+    font-size: 0.875rem;
+  }
+
+  /* Search: larger on mobile, stacked */
+  .search-box {
+    flex-direction: column;
+    gap: 10px;
+    max-width: none;
+    margin-bottom: 14px;
+  }
+
+  .search-box input {
+    height: 52px;
+    font-size: 1.0625rem;
+    padding: 0 16px;
+    border-radius: 10px;
+  }
+
+  .search-box .btn-primary {
+    height: 52px;
+    width: 100%;
+    font-size: 1rem;
+    border-radius: 10px;
+  }
+
+  .search-modes {
+    gap: 28px;
+    font-size: 0.9375rem;
+    padding-top: 2px;
+  }
+
+  .search-modes label {
+    gap: 10px;
+    min-height: 44px;
+  }
+
+  /* Keep compact search in header on mobile */
+  .header-search {
+    display: flex;
+    height: 40px;
+    max-width: none;
+  }
+
+  .header-search input {
+    font-size: 0.9375rem;
+    padding: 0 12px;
+  }
+
+  .header-search button {
+    width: 40px;
+    height: 40px;
+  }
 
   .film-layout {
     grid-template-columns: 1fr;
@@ -676,14 +656,17 @@ a:hover { text-decoration: underline; }
     gap: 20px;
   }
 
-  .film-poster-col { width: 140px; }
-  .film-desc { max-width: none; }
-  .film-actions { justify-content: center; }
+  .film-poster-col {
+    width: 140px;
+  }
 
-  .search-box { flex-direction: column; }
-  .search-box .btn-primary { height: 44px; }
+  .film-desc {
+    max-width: none;
+  }
 
-  .header-search { display: none; }
+  .film-actions {
+    justify-content: center;
+  }
 
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
