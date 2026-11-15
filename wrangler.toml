@@ -7,15 +7,7 @@ directory = "."
 binding = "ASSETS"
 not_found_handling = "single-page-application"
 
-# Daily usage counters per API key index
-# 1) npx wrangler kv namespace create kino-usage
-# 2) paste id below
-# 3) npx wrangler deploy
-[[kv_namespaces]]
-binding = "USAGE"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
-
-# Secrets (do not put keys in this file):
-#   npx wrangler secret put KP_API_KEYS
-# value example:
-#   key1,key2,key3,key4,key5,key6
+# Optional — only after you create KV and paste real id
+# [[kv_namespaces]]
+# binding = "USAGE"
+# id = "your_kv_namespace_id"

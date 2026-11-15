@@ -1,21 +1,12 @@
 /**
- * Cloudflare Worker: static site + Kinopoisk API proxy
- * Multi-key rotation: least-used key today wins
- *
- * Secrets:
- *   KP_API_KEYS = key1,key2,key3,key4,key5,key6
- *   (or legacy single KP_API_KEY)
- *
- * KV (optional but recommended):
- *   binding USAGE — daily counters per key index
- *
- *   npx wrangler kv namespace create kino-usage
- *   # put id into wrangler.toml, then:
- *   npx wrangler secret put KP_API_KEYS
+ * Cloudflare Worker: static + Kinopoisk API proxy
+ * Keys: KP_API_KEY1, KP_API_KEY2, ... KP_API_KEY6 (Secrets in Dashboard)
+ * Optional: KP_API_KEY (legacy single), KP_API_KEYS (comma list)
+ * Optional KV binding USAGE — daily usage counters
  */
 
 const KP_BASE = 'https://kinopoiskapiunofficial.tech/api/v2.2';
-const DAILY_SOFT_LIMIT = 480; // leave headroom under 500
+const DAILY_SOFT_LIMIT = 480;
 
 const TTL = {
   collections: 6 * 3600,
@@ -39,22 +30,35 @@ export default {
     }
 
     return new Response(
-      'ASSETS binding missing. Check wrangler.toml [assets] and redeploy.',
+      'ASSETS binding missing. Redeploy with [assets] in wrangler.toml',
       { status: 500, headers: { 'content-type': 'text/plain; charset=utf-8' } }
     );
   }
 };
 
+/** Collect keys from KP_API_KEY1..6, then KP_API_KEY, then KP_API_KEYS CSV */
 function listKeys(env) {
-  const raw = env.KP_API_KEYS || env.KP_API_KEY || '';
-  return raw
-    .split(/[,\n;]+/)
-    .map((k) => k.trim())
-    .filter(Boolean);
+  const keys = [];
+  for (let i = 1; i <= 12; i++) {
+    const v = env['KP_API_KEY' + i];
+    if (v && String(v).trim()) keys.push(String(v).trim());
+  }
+  if (env.KP_API_KEY && String(env.KP_API_KEY).trim()) {
+    keys.push(String(env.KP_API_KEY).trim());
+  }
+  if (env.KP_API_KEYS) {
+    String(env.KP_API_KEYS)
+      .split(/[,\n;]+/)
+      .map((k) => k.trim())
+      .filter(Boolean)
+      .forEach((k) => keys.push(k));
+  }
+  // unique preserve order
+  return [...new Set(keys)];
 }
 
 function today() {
-  return new Date().toISOString().slice(0, 10); // UTC day
+  return new Date().toISOString().slice(0, 10);
 }
 
 async function getUsage(env, day, index) {
@@ -67,11 +71,9 @@ async function incrUsage(env, day, index) {
   if (!env.USAGE) return;
   const key = 'u:' + day + ':' + index;
   const n = (await getUsage(env, day, index)) + 1;
-  // expire in ~2 days so old counters clean up
   await env.USAGE.put(key, String(n), { expirationTtl: 172800 });
 }
 
-/** Pick key with lowest usage today; skip exhausted ones if possible */
 async function pickKey(env) {
   const keys = listKeys(env);
   if (!keys.length) return null;
@@ -79,33 +81,28 @@ async function pickKey(env) {
   const day = today();
   let bestIdx = 0;
   let bestCount = Infinity;
-  let anyUnderLimit = false;
 
   for (let i = 0; i < keys.length; i++) {
     const count = await getUsage(env, day, i);
-    if (count < DAILY_SOFT_LIMIT) {
-      anyUnderLimit = true;
-      if (count < bestCount) {
-        bestCount = count;
-        bestIdx = i;
-      }
-    } else if (!anyUnderLimit && count < bestCount) {
-      // all over soft limit — still pick least used
+    if (count < bestCount) {
       bestCount = count;
       bestIdx = i;
     }
   }
 
-  // if we only saw exhausted keys, recompute least used among all
-  if (!anyUnderLimit) {
-    bestCount = Infinity;
-    for (let i = 0; i < keys.length; i++) {
-      const count = await getUsage(env, day, i);
-      if (count < bestCount) {
-        bestCount = count;
-        bestIdx = i;
-      }
+  // prefer under soft limit
+  let under = -1;
+  let underCount = Infinity;
+  for (let i = 0; i < keys.length; i++) {
+    const count = await getUsage(env, day, i);
+    if (count < DAILY_SOFT_LIMIT && count < underCount) {
+      underCount = count;
+      under = i;
     }
+  }
+  if (under >= 0) {
+    bestIdx = under;
+    bestCount = underCount;
   }
 
   return {
@@ -130,7 +127,7 @@ async function usageSummary(env) {
       remaining: Math.max(0, DAILY_SOFT_LIMIT - count)
     });
   }
-  return { day, keys: rows.length, usage: rows };
+  return { day, keyCount: keys.length, usage: rows };
 }
 
 async function handleApi(request, env, ctx, url) {
@@ -145,6 +142,17 @@ async function handleApi(request, env, ctx, url) {
       ok: true,
       hasKey: keys.length > 0,
       keyCount: keys.length,
+      sources: {
+        KEY1: Boolean(env.KP_API_KEY1),
+        KEY2: Boolean(env.KP_API_KEY2),
+        KEY3: Boolean(env.KP_API_KEY3),
+        KEY4: Boolean(env.KP_API_KEY4),
+        KEY5: Boolean(env.KP_API_KEY5),
+        KEY6: Boolean(env.KP_API_KEY6),
+        KEY: Boolean(env.KP_API_KEY),
+        KEYS_CSV: Boolean(env.KP_API_KEYS)
+      },
+      hasUsageKV: Boolean(env.USAGE),
       ...summary
     });
   }
@@ -158,7 +166,7 @@ async function handleApi(request, env, ctx, url) {
     return json(
       {
         error:
-          'No API keys. Set secret KP_API_KEYS=key1,key2,... via wrangler secret put KP_API_KEYS'
+          'No API keys. Add secrets KP_API_KEY1, KP_API_KEY2, ... in Worker Settings'
       },
       503
     );
@@ -183,60 +191,37 @@ async function handleApi(request, env, ctx, url) {
     return hit;
   }
 
-  const upstream = await fetch(KP_BASE + kpPath, {
-    headers: {
-      'X-API-KEY': picked.key,
-      'Content-Type': 'application/json',
-      Accept: 'application/json'
-    }
-  });
+  async function callUpstream(apiKey, keyIndex) {
+    const upstream = await fetch(KP_BASE + kpPath, {
+      headers: {
+        'X-API-KEY': apiKey,
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
+      }
+    });
+    ctx.waitUntil(incrUsage(env, picked.day, keyIndex));
+    return upstream;
+  }
 
-  // Count only real upstream calls (not cache hits)
-  ctx.waitUntil(incrUsage(env, picked.day, picked.index));
+  let upstream = await callUpstream(picked.key, picked.index);
+
+  if (upstream.status === 402 || upstream.status === 429) {
+    if (env.USAGE) {
+      await env.USAGE.put(
+        'u:' + picked.day + ':' + picked.index,
+        String(DAILY_SOFT_LIMIT + 50),
+        { expirationTtl: 172800 }
+      );
+    }
+    const retry = await pickKey(env);
+    if (retry && retry.index !== picked.index) {
+      upstream = await callUpstream(retry.key, retry.index);
+      picked.index = retry.index;
+    }
+  }
 
   const body = await upstream.text();
   const ttl = pickTtl(kpPath);
-
-  // If this key is rate-limited, try next least-used once
-  if (upstream.status === 402 || upstream.status === 429) {
-    const keys = listKeys(env);
-    if (keys.length > 1) {
-      // mark this one high and retry with another
-      if (env.USAGE) {
-        await env.USAGE.put(
-          'u:' + picked.day + ':' + picked.index,
-          String(DAILY_SOFT_LIMIT + 50),
-          { expirationTtl: 172800 }
-        );
-      }
-      const retry = await pickKey(env);
-      if (retry && retry.index !== picked.index) {
-        const upstream2 = await fetch(KP_BASE + kpPath, {
-          headers: {
-            'X-API-KEY': retry.key,
-            'Content-Type': 'application/json',
-            Accept: 'application/json'
-          }
-        });
-        ctx.waitUntil(incrUsage(env, retry.day, retry.index));
-        const body2 = await upstream2.text();
-        const response2 = new Response(body2, {
-          status: upstream2.status,
-          headers: {
-            'Content-Type': 'application/json; charset=utf-8',
-            'Cache-Control': 'public, max-age=' + ttl,
-            'X-Cache': 'MISS',
-            'X-Key-Index': String(retry.index),
-            ...corsHeaders()
-          }
-        });
-        if (upstream2.ok) {
-          ctx.waitUntil(cache.put(cacheKey, response2.clone()));
-        }
-        return response2;
-      }
-    }
-  }
 
   const response = new Response(body, {
     status: upstream.status,
