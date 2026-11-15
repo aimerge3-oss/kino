@@ -1,11 +1,21 @@
 /**
- * Cloudflare Worker: static site + Kinopoisk API proxy with cache
+ * Cloudflare Worker: static site + Kinopoisk API proxy
+ * Multi-key rotation: least-used key today wins
  *
  * Secrets:
- *   npx wrangler secret put KP_API_KEY
+ *   KP_API_KEYS = key1,key2,key3,key4,key5,key6
+ *   (or legacy single KP_API_KEY)
+ *
+ * KV (optional but recommended):
+ *   binding USAGE — daily counters per key index
+ *
+ *   npx wrangler kv namespace create kino-usage
+ *   # put id into wrangler.toml, then:
+ *   npx wrangler secret put KP_API_KEYS
  */
 
 const KP_BASE = 'https://kinopoiskapiunofficial.tech/api/v2.2';
+const DAILY_SOFT_LIMIT = 480; // leave headroom under 500
 
 const TTL = {
   collections: 6 * 3600,
@@ -20,12 +30,10 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // API proxy
     if (url.pathname.startsWith('/api/')) {
       return handleApi(request, env, ctx, url);
     }
 
-    // Static files via Workers Assets
     if (env.ASSETS) {
       return env.ASSETS.fetch(request);
     }
@@ -37,18 +45,123 @@ export default {
   }
 };
 
+function listKeys(env) {
+  const raw = env.KP_API_KEYS || env.KP_API_KEY || '';
+  return raw
+    .split(/[,\n;]+/)
+    .map((k) => k.trim())
+    .filter(Boolean);
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10); // UTC day
+}
+
+async function getUsage(env, day, index) {
+  if (!env.USAGE) return 0;
+  const v = await env.USAGE.get('u:' + day + ':' + index);
+  return parseInt(v || '0', 10) || 0;
+}
+
+async function incrUsage(env, day, index) {
+  if (!env.USAGE) return;
+  const key = 'u:' + day + ':' + index;
+  const n = (await getUsage(env, day, index)) + 1;
+  // expire in ~2 days so old counters clean up
+  await env.USAGE.put(key, String(n), { expirationTtl: 172800 });
+}
+
+/** Pick key with lowest usage today; skip exhausted ones if possible */
+async function pickKey(env) {
+  const keys = listKeys(env);
+  if (!keys.length) return null;
+
+  const day = today();
+  let bestIdx = 0;
+  let bestCount = Infinity;
+  let anyUnderLimit = false;
+
+  for (let i = 0; i < keys.length; i++) {
+    const count = await getUsage(env, day, i);
+    if (count < DAILY_SOFT_LIMIT) {
+      anyUnderLimit = true;
+      if (count < bestCount) {
+        bestCount = count;
+        bestIdx = i;
+      }
+    } else if (!anyUnderLimit && count < bestCount) {
+      // all over soft limit — still pick least used
+      bestCount = count;
+      bestIdx = i;
+    }
+  }
+
+  // if we only saw exhausted keys, recompute least used among all
+  if (!anyUnderLimit) {
+    bestCount = Infinity;
+    for (let i = 0; i < keys.length; i++) {
+      const count = await getUsage(env, day, i);
+      if (count < bestCount) {
+        bestCount = count;
+        bestIdx = i;
+      }
+    }
+  }
+
+  return {
+    key: keys[bestIdx],
+    index: bestIdx,
+    day,
+    usage: bestCount,
+    totalKeys: keys.length
+  };
+}
+
+async function usageSummary(env) {
+  const keys = listKeys(env);
+  const day = today();
+  const rows = [];
+  for (let i = 0; i < keys.length; i++) {
+    const count = await getUsage(env, day, i);
+    rows.push({
+      index: i,
+      used: count,
+      softLimit: DAILY_SOFT_LIMIT,
+      remaining: Math.max(0, DAILY_SOFT_LIMIT - count)
+    });
+  }
+  return { day, keys: rows.length, usage: rows };
+}
+
 async function handleApi(request, env, ctx, url) {
   if (request.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders() });
   }
 
   if (url.pathname === '/api/health') {
-    return json({ ok: true, hasKey: Boolean(env.KP_API_KEY) });
+    const keys = listKeys(env);
+    const summary = await usageSummary(env);
+    return json({
+      ok: true,
+      hasKey: keys.length > 0,
+      keyCount: keys.length,
+      ...summary
+    });
   }
 
-  const key = env.KP_API_KEY;
-  if (!key) {
-    return json({ error: 'KP_API_KEY not configured. Run: npx wrangler secret put KP_API_KEY' }, 503);
+  if (url.pathname === '/api/usage') {
+    return json(await usageSummary(env));
+  }
+
+  const picked = await pickKey(env);
+  if (!picked) {
+    return json(
+      {
+        error:
+          'No API keys. Set secret KP_API_KEYS=key1,key2,... via wrangler secret put KP_API_KEYS'
+      },
+      503
+    );
   }
 
   const kpPath = url.pathname.replace(/^\/api/, '') + url.search;
@@ -57,7 +170,9 @@ async function handleApi(request, env, ctx, url) {
     return json({ error: 'forbidden' }, 403);
   }
 
-  const cacheKey = new Request('https://kp-cache.internal' + kpPath, { method: 'GET' });
+  const cacheKey = new Request('https://kp-cache.internal' + kpPath, {
+    method: 'GET'
+  });
   const cache = caches.default;
 
   const cached = await cache.match(cacheKey);
@@ -70,14 +185,58 @@ async function handleApi(request, env, ctx, url) {
 
   const upstream = await fetch(KP_BASE + kpPath, {
     headers: {
-      'X-API-KEY': key,
+      'X-API-KEY': picked.key,
       'Content-Type': 'application/json',
       Accept: 'application/json'
     }
   });
 
+  // Count only real upstream calls (not cache hits)
+  ctx.waitUntil(incrUsage(env, picked.day, picked.index));
+
   const body = await upstream.text();
   const ttl = pickTtl(kpPath);
+
+  // If this key is rate-limited, try next least-used once
+  if (upstream.status === 402 || upstream.status === 429) {
+    const keys = listKeys(env);
+    if (keys.length > 1) {
+      // mark this one high and retry with another
+      if (env.USAGE) {
+        await env.USAGE.put(
+          'u:' + picked.day + ':' + picked.index,
+          String(DAILY_SOFT_LIMIT + 50),
+          { expirationTtl: 172800 }
+        );
+      }
+      const retry = await pickKey(env);
+      if (retry && retry.index !== picked.index) {
+        const upstream2 = await fetch(KP_BASE + kpPath, {
+          headers: {
+            'X-API-KEY': retry.key,
+            'Content-Type': 'application/json',
+            Accept: 'application/json'
+          }
+        });
+        ctx.waitUntil(incrUsage(env, retry.day, retry.index));
+        const body2 = await upstream2.text();
+        const response2 = new Response(body2, {
+          status: upstream2.status,
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Cache-Control': 'public, max-age=' + ttl,
+            'X-Cache': 'MISS',
+            'X-Key-Index': String(retry.index),
+            ...corsHeaders()
+          }
+        });
+        if (upstream2.ok) {
+          ctx.waitUntil(cache.put(cacheKey, response2.clone()));
+        }
+        return response2;
+      }
+    }
+  }
 
   const response = new Response(body, {
     status: upstream.status,
@@ -85,6 +244,7 @@ async function handleApi(request, env, ctx, url) {
       'Content-Type': 'application/json; charset=utf-8',
       'Cache-Control': 'public, max-age=' + ttl,
       'X-Cache': 'MISS',
+      'X-Key-Index': String(picked.index),
       ...corsHeaders()
     }
   });

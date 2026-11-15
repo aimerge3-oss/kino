@@ -1,43 +1,70 @@
 # Kino
 
-Каталог фильмов и сериалов. Данные — Kinopoisk Unofficial API через Cloudflare Worker с кэшем.
+Каталог фильмов. Данные — Kinopoisk Unofficial API через Cloudflare Worker.
 
-## Почему Worker
+## Несколько API-ключей (ротация)
 
-Лимит API ~500 запросов/сутки. Без кэша этого не хватает.
+Лимит ~500 запросов/сутки **на ключ**. Можно повесить 5–6 ключей — Worker каждый раз берёт **наименее использованный за сегодня**.
 
-Worker:
-- хранит `KP_API_KEY` в Secrets (не в браузере)
-- кэширует популярное/топ на 6 часов, карточки фильмов на 24 часа
-- все посетители бьют в кэш, а не в API
+С кэшем (топ/популярное 6ч, фильм 24ч) реальные хиты в API сильно меньше числа просмотров страниц.
 
-## Деплой API (Worker)
+### 1. KV для счётчиков
 
 ```bash
-npm i -g wrangler
-npx wrangler login
-npx wrangler deploy
-npx wrangler secret put KP_API_KEY
-# вставь ключ с https://kinopoiskapiunofficial.tech
+npx wrangler kv namespace create kino-usage
 ```
 
-Проверка: `https://твой-worker.workers.dev/api/health` → `{"ok":true,"hasKey":true}`
+Скопируй `id` в `wrangler.toml` → `[[kv_namespaces]]` → `id = "..."`
 
-### Связка со статикой
+### 2. Секрет со всеми ключами
 
-**Вариант A — Cloudflare Pages + Worker route**
-1. Pages: подключи этот репозиторий, output `/`
-2. Worker: route `твой-домен/api/*` → этот worker
+```bash
+npx wrangler secret put KP_API_KEYS
+```
 
-**Вариант B — один Worker**  
-Отдавай статику через Workers Assets / Pages, API на `/api/*`.
+Вставь одной строкой через запятую:
 
-Фронт сам ходит на `/api/...`. Если прокси нет — fallback на ключ в «Ключ» (localStorage).
+```
+ключ1,ключ2,ключ3,ключ4,ключ5,ключ6
+```
+
+Старый одиночный `KP_API_KEY` тоже поддерживается.
+
+### 3. Деплой
+
+```bash
+npx wrangler deploy
+```
+
+### Проверка
+
+```
+GET /api/health
+```
+
+Пример ответа:
+
+```json
+{
+  "ok": true,
+  "hasKey": true,
+  "keyCount": 6,
+  "day": "2026-11-15",
+  "usage": [
+    { "index": 0, "used": 12, "softLimit": 480, "remaining": 468 },
+    { "index": 1, "used": 3, "softLimit": 480, "remaining": 477 }
+  ]
+}
+```
+
+`GET /api/usage` — только счётчики.
+
+При 402/429 Worker помечает ключ как исчерпанный на сегодня и пробует другой.
 
 ## Плеер
 
-На `film.html` блок `#player` — вставь iframe или свой скрипт.
+На `film.html` блок `#player` — вставь iframe или скрипт.
 
 ## LiveInternet
 
-Официальный код в `js/liveinternet.js`, бейдж в футере.
+Код в `js/liveinternet.js`.
