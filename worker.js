@@ -14,19 +14,21 @@ const TTL = {
   default: 3600
 };
 
+// CSP: allow Vibix (Rendex) SDK + player resources
 const CSP =
   "default-src 'self'; " +
-  "script-src 'self'; " +
-  "style-src 'self' 'unsafe-inline'; " +
+  "script-src 'self' https://graphicslab.io https://alt.graphicslab.io; " +
+  "style-src 'self' 'unsafe-inline' https://graphicslab.io https://alt.graphicslab.io; " +
   "img-src 'self' data: https:; " +
-  "font-src 'self' data:; " +
-  "connect-src 'self' https://kinopoiskapiunofficial.tech https://counter.yadro.ru; " +
-  "media-src 'none'; " +
+  "font-src 'self' data: https:; " +
+  "connect-src 'self' https://kinopoiskapiunofficial.tech https://counter.yadro.ru https://graphicslab.io https://alt.graphicslab.io https://*.graphicslab.io; " +
+  "media-src 'self' blob: https:; " +
   "object-src 'none'; " +
   "base-uri 'self'; " +
   "form-action 'self'; " +
   "frame-ancestors 'none'; " +
-  "frame-src https://www.youtube.com https://youtube.com; " +
+  "frame-src https://www.youtube.com https://youtube.com https://graphicslab.io https://alt.graphicslab.io https://*.graphicslab.io; " +
+  "worker-src 'self' blob:; " +
   "upgrade-insecure-requests";
 
 export default {
@@ -55,7 +57,7 @@ function withSecurity(res, isHtmlAsset) {
   const headers = new Headers(res.headers);
   headers.set('X-Content-Type-Options', 'nosniff');
   headers.set('X-Frame-Options', 'DENY');
-  headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  headers.set('Referrer-Policy', 'strict-origin-when-downgrade');
   headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   headers.set('Content-Security-Policy', CSP);
   if (!headers.has('Cache-Control') && isHtmlAsset) {
