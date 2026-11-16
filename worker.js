@@ -1,8 +1,7 @@
 /**
  * Cloudflare Worker: static + Kinopoisk API proxy
- * Keys: KP_API_KEY1, KP_API_KEY2, ... KP_API_KEY6 (Secrets in Dashboard)
- * Optional: KP_API_KEY (legacy single), KP_API_KEYS (comma list)
- * Optional KV binding USAGE — daily usage counters
+ * Keys: KP_API_KEY1 .. KP_API_KEY6
+ * Static assets get long Cache-Control to cut free-tier asset requests
  */
 
 const KP_BASE = 'https://kinopoiskapiunofficial.tech/api/v2.2';
@@ -26,17 +25,35 @@ export default {
     }
 
     if (env.ASSETS) {
-      return env.ASSETS.fetch(request);
+      return serveAsset(request, env, url);
     }
 
-    return new Response(
-      'ASSETS binding missing. Redeploy with [assets] in wrangler.toml',
-      { status: 500, headers: { 'content-type': 'text/plain; charset=utf-8' } }
-    );
+    return new Response('ASSETS binding missing',
+      { status: 500, headers: { 'content-type': 'text/plain; charset=utf-8' } });
   }
 };
 
-/** Collect keys from KP_API_KEY1..6, then KP_API_KEY, then KP_API_KEYS CSV */
+async function serveAsset(request, env, url) {
+  const res = await env.ASSETS.fetch(request);
+  const path = url.pathname;
+  const headers = new Headers(res.headers);
+
+  // Long browser+edge cache for static — fewer repeat Asset requests
+  if (path.endsWith('.css') || path.endsWith('.js')) {
+    headers.set('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
+  } else if (path.endsWith('.html') || path === '/' || path.endsWith('/')) {
+    headers.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
+  } else {
+    headers.set('Cache-Control', 'public, max-age=86400');
+  }
+
+  return new Response(res.body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers
+  });
+}
+
 function listKeys(env) {
   const keys = [];
   for (let i = 1; i <= 12; i++) {
@@ -53,7 +70,6 @@ function listKeys(env) {
       .filter(Boolean)
       .forEach((k) => keys.push(k));
   }
-  // unique preserve order
   return [...new Set(keys)];
 }
 
@@ -90,7 +106,6 @@ async function pickKey(env) {
     }
   }
 
-  // prefer under soft limit
   let under = -1;
   let underCount = Infinity;
   for (let i = 0; i < keys.length; i++) {
@@ -163,13 +178,7 @@ async function handleApi(request, env, ctx, url) {
 
   const picked = await pickKey(env);
   if (!picked) {
-    return json(
-      {
-        error:
-          'No API keys. Add secrets KP_API_KEY1, KP_API_KEY2, ... in Worker Settings'
-      },
-      503
-    );
+    return json({ error: 'No API keys. Add KP_API_KEY1… in Worker Settings' }, 503);
   }
 
   const kpPath = url.pathname.replace(/^\/api/, '') + url.search;
@@ -178,9 +187,7 @@ async function handleApi(request, env, ctx, url) {
     return json({ error: 'forbidden' }, 403);
   }
 
-  const cacheKey = new Request('https://kp-cache.internal' + kpPath, {
-    method: 'GET'
-  });
+  const cacheKey = new Request('https://kp-cache.internal' + kpPath, { method: 'GET' });
   const cache = caches.default;
 
   const cached = await cache.match(cacheKey);
