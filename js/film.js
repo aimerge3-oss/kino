@@ -100,6 +100,14 @@
         }
       } catch (_) {}
 
+      // Vibix player (Rendex SDK)
+      player.innerHTML = '';
+      const ins = document.createElement('ins');
+      ins.setAttribute('data-publisher-id', '679962206');
+      ins.setAttribute('data-type', 'kp');
+      ins.setAttribute('data-id', id);
+      player.appendChild(ins);
+
       player.dataset.kinopoiskId = id;
       player.dataset.title = title;
 
