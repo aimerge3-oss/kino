@@ -106,6 +106,12 @@
       ins.setAttribute('data-publisher-id', '679962206');
       ins.setAttribute('data-type', 'kp');
       ins.setAttribute('data-id', id);
+      ins.setAttribute('data-design', '4');
+      ins.setAttribute('data-color1', '#FF0000');
+      ins.setAttribute('data-color2', '#CC0000');
+      ins.setAttribute('data-color3', '#282828');
+      ins.setAttribute('data-color4', '#FF3333');
+      ins.setAttribute('data-color5', '#FFFFFF');
       player.appendChild(ins);
 
       player.dataset.kinopoiskId = id;
