@@ -1,4 +1,4 @@
-/* КиноПлёнка film page — XSS-hardened + Vibix */
+/* КиноПлёнка film page — XSS-hardened + multi-player */
 (function () {
   'use strict';
 
@@ -130,6 +130,97 @@
       '</div></div></a>'
     );
   }
+
+  /* ── Player registry ───────────────────────────────────────────────
+     Чтобы добавить новый плеер — просто добавь объект в массив PLAYERS.
+     id        — уникальный ключ (сохраняется в localStorage)
+     name      — подпись на вкладке
+     render(container, kpId) — функция, которая вставляет плеер
+  ─────────────────────────────────────────────────────────────────── */
+  const PLAYERS = [
+    {
+      id: 'vibix',
+      name: 'Vibix',
+      render: function (container, kpId) {
+        container.innerHTML = '';
+        const ins = document.createElement('ins');
+        ins.setAttribute('data-publisher-id', '679962206');
+        ins.setAttribute('data-type', 'kp');
+        ins.setAttribute('data-id', kpId);
+        ins.setAttribute('data-design', '4');
+        ins.setAttribute('data-color1', '#FF0000');
+        ins.setAttribute('data-color2', '#CC0000');
+        ins.setAttribute('data-color3', '#282828');
+        ins.setAttribute('data-color4', '#FF3333');
+        ins.setAttribute('data-color5', '#FFFFFF');
+        container.appendChild(ins);
+      }
+    }
+    // Пример будущего плеера:
+    // {
+    //   id: 'another',
+    //   name: 'Другой',
+    //   render: function (container, kpId) {
+    //     container.innerHTML = '...';
+    //   }
+    // }
+  ];
+
+  const STORAGE_KEY = 'kino_player';
+
+  function getSavedPlayerId() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved && PLAYERS.some(function (p) { return p.id === saved; })) {
+        return saved;
+      }
+    } catch (_) {}
+    return PLAYERS[0] ? PLAYERS[0].id : null;
+  }
+
+  function savePlayerId(id) {
+    try {
+      localStorage.setItem(STORAGE_KEY, id);
+    } catch (_) {}
+  }
+
+  function renderPlayerTabs(activeId, onSelect) {
+    const tabsEl = document.getElementById('playerTabs');
+    if (!tabsEl) return;
+
+    tabsEl.innerHTML = '';
+
+    // Если плеер один — вкладки можно скрыть, но оставляем видимыми
+    // чтобы пользователь видел, что выбор есть и его можно расширить.
+    PLAYERS.forEach(function (p) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'player-tab' + (p.id === activeId ? ' is-active' : '');
+      btn.setAttribute('role', 'tab');
+      btn.setAttribute('aria-selected', p.id === activeId ? 'true' : 'false');
+      btn.dataset.playerId = p.id;
+      btn.textContent = p.name;
+      btn.addEventListener('click', function () {
+        if (p.id === activeId) return;
+        onSelect(p.id);
+      });
+      tabsEl.appendChild(btn);
+    });
+  }
+
+  function loadPlayer(playerId, kpId) {
+    const player = document.getElementById('player');
+    if (!player) return;
+
+    const entry = PLAYERS.find(function (p) { return p.id === playerId; }) || PLAYERS[0];
+    if (!entry) return;
+
+    entry.render(player, kpId);
+    player.dataset.kinopoiskId = kpId;
+    player.dataset.player = entry.id;
+  }
+
+  /* ── Page logic ─────────────────────────────────────────────────── */
 
   const hf = document.getElementById('headerSearch');
   const hi = document.getElementById('headerInput');
@@ -267,21 +358,20 @@
         }
       } catch (_) {}
 
-      // Vibix player (Rendex SDK) — attributes set only once at creation
+      // Player switcher
+      let currentPlayerId = getSavedPlayerId();
+
+      function selectPlayer(playerId) {
+        currentPlayerId = playerId;
+        savePlayerId(playerId);
+        renderPlayerTabs(playerId, selectPlayer);
+        loadPlayer(playerId, id);
+      }
+
+      renderPlayerTabs(currentPlayerId, selectPlayer);
+      loadPlayer(currentPlayerId, id);
+
       if (player) {
-        player.innerHTML = '';
-        const ins = document.createElement('ins');
-        ins.setAttribute('data-publisher-id', '679962206');
-        ins.setAttribute('data-type', 'kp');
-        ins.setAttribute('data-id', id);
-        ins.setAttribute('data-design', '4');
-        ins.setAttribute('data-color1', '#FF0000');
-        ins.setAttribute('data-color2', '#CC0000');
-        ins.setAttribute('data-color3', '#282828');
-        ins.setAttribute('data-color4', '#FF3333');
-        ins.setAttribute('data-color5', '#FFFFFF');
-        player.appendChild(ins);
-        player.dataset.kinopoiskId = id;
         player.dataset.title = title;
       }
 
