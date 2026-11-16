@@ -38,7 +38,7 @@
       const data = await KP.film(id);
 
       const title = data.nameRu || data.nameOriginal || data.nameEn || 'Без названия';
-      document.title = title + ' — Kino';
+      document.title = title + ' — КиноПлёнка';
 
       titleEl.textContent = title;
 
@@ -117,7 +117,7 @@
     } catch (e) {
       if (e.code === 'NO_KEY') {
         showError(
-          'API не настроен. Нужен KP_API_KEY в Cloudflare Worker. <a href="./">На главную</a>'
+          'API не настроен. Нужен ключ в Cloudflare Worker. <a href="./">На главную</a>'
         );
       } else if (e.code === 'NOT_FOUND') {
         showError('Фильм не найден. <a href="./">На главную</a>');
