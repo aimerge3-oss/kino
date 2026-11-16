@@ -4,11 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0c0c0e">
+  <meta name="referrer" content="no-referrer-when-downgrade">
   <title>Фильм — КиноПлёнка</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23e50914'/><polygon points='38,28 38,72 72,50' fill='white'/></svg>">
-  <script src="https://graphicslab.io/sdk/v2/rendex-sdk.min.js" async></script>
-  <script src="https://alt.graphicslab.io/sdk/v2/rendex-sdk.min.js" async></script>
 </head>
 <body>
   <div class="layout">
@@ -18,7 +17,7 @@
         <span class="logo__text">КиноПлёнка</span>
       </a>
       <form class="header-search" id="headerSearch" role="search">
-        <input type="search" id="headerInput" placeholder="Название или ID" autocomplete="off">
+        <input type="search" id="headerInput" placeholder="Название или ID" autocomplete="off" maxlength="200">
         <button type="submit" aria-label="Искать">⌕</button>
       </form>
     </header>
@@ -28,12 +27,18 @@
 
       <div id="filmContent" hidden>
         <div class="player-wrap">
-          <div class="player" id="player"></div>
+          <div class="player" id="player">
+            <div class="player__placeholder" id="playerPlaceholder">
+              <span class="player__icon">▶</span>
+              <p>Плеер</p>
+              <p class="player__hint">Слот для легального контента</p>
+            </div>
+          </div>
         </div>
 
         <div class="film-layout">
           <div class="film-poster-col">
-            <img id="filmPoster" class="film-poster" src="" alt="">
+            <img id="filmPoster" class="film-poster" src="" alt="" referrerpolicy="no-referrer">
           </div>
           <div class="film-info">
             <h1 id="filmTitle" class="film-title"></h1>
@@ -44,16 +49,11 @@
             <p id="filmDescription" class="film-desc"></p>
 
             <div class="film-actions">
-              <a id="filmTrailer" class="btn-primary" href="#" target="_blank" rel="noopener" hidden>Трейлер</a>
-              <a id="filmKp" class="btn-outline" href="#" target="_blank" rel="noopener">Кинопоиск</a>
+              <a id="filmTrailer" class="btn-primary" href="#" target="_blank" rel="noopener noreferrer" hidden>Трейлер</a>
+              <a id="filmKp" class="btn-outline" href="#" target="_blank" rel="noopener noreferrer">Кинопоиск</a>
             </div>
           </div>
         </div>
-
-        <section class="section ai-block" id="aiBlock" hidden>
-          <h2>Улучшенное описание</h2>
-          <div id="aiText" class="ai-text"></div>
-        </section>
 
         <section class="section" id="similarSection" hidden>
           <h2>Похожие</h2>

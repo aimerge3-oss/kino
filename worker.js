@@ -1,7 +1,5 @@
 /**
- * Cloudflare Worker: static + Kinopoisk API proxy
- * Keys: KP_API_KEY1 .. KP_API_KEY6
- * Static assets get long Cache-Control to cut free-tier asset requests
+ * Cloudflare Worker: static + Kinopoisk API proxy + security headers
  */
 
 const KP_BASE = 'https://kinopoiskapiunofficial.tech/api/v2.2';
@@ -16,29 +14,65 @@ const TTL = {
   default: 3600
 };
 
+const CSP =
+  "default-src 'self'; " +
+  "script-src 'self'; " +
+  "style-src 'self' 'unsafe-inline'; " +
+  "img-src 'self' data: https:; " +
+  "font-src 'self' data:; " +
+  "connect-src 'self' https://kinopoiskapiunofficial.tech https://counter.yadro.ru; " +
+  "media-src 'none'; " +
+  "object-src 'none'; " +
+  "base-uri 'self'; " +
+  "form-action 'self'; " +
+  "frame-ancestors 'none'; " +
+  "frame-src https://www.youtube.com https://youtube.com; " +
+  "upgrade-insecure-requests";
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (url.pathname.startsWith('/api/')) {
-      return handleApi(request, env, ctx, url);
+      return withSecurity(await handleApi(request, env, ctx, url), false);
     }
 
     if (env.ASSETS) {
-      return serveAsset(request, env, url);
+      return withSecurity(await serveAsset(request, env, url), true);
     }
 
-    return new Response('ASSETS binding missing',
-      { status: 500, headers: { 'content-type': 'text/plain; charset=utf-8' } });
+    return withSecurity(
+      new Response('ASSETS binding missing', {
+        status: 500,
+        headers: { 'content-type': 'text/plain; charset=utf-8' }
+      }),
+      false
+    );
   }
 };
+
+function withSecurity(res, isHtmlAsset) {
+  const headers = new Headers(res.headers);
+  headers.set('X-Content-Type-Options', 'nosniff');
+  headers.set('X-Frame-Options', 'DENY');
+  headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  headers.set('Content-Security-Policy', CSP);
+  if (!headers.has('Cache-Control') && isHtmlAsset) {
+    /* keep existing from serveAsset */
+  }
+  return new Response(res.body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers
+  });
+}
 
 async function serveAsset(request, env, url) {
   const res = await env.ASSETS.fetch(request);
   const path = url.pathname;
   const headers = new Headers(res.headers);
 
-  // Long browser+edge cache for static — fewer repeat Asset requests
   if (path.endsWith('.css') || path.endsWith('.js')) {
     headers.set('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
   } else if (path.endsWith('.html') || path === '/' || path.endsWith('/')) {
@@ -178,11 +212,19 @@ async function handleApi(request, env, ctx, url) {
 
   const picked = await pickKey(env);
   if (!picked) {
-    return json({ error: 'No API keys. Add KP_API_KEY1… in Worker Settings' }, 503);
+    return json({ error: 'No API keys' }, 503);
   }
 
   const kpPath = url.pathname.replace(/^\/api/, '') + url.search;
 
+  // Path allowlist — only films API, block path tricks
+  if (!/^\/films(\/[\w.-]+)*\/?(\?.*)?$/.test(kpPath.split('?')[0] + (kpPath.includes('?') ? '' : '')) &&
+      !kpPath.startsWith('/films')) {
+    return json({ error: 'forbidden' }, 403);
+  }
+  if (kpPath.includes('..') || kpPath.includes('//', 1)) {
+    return json({ error: 'forbidden' }, 403);
+  }
   if (!kpPath.startsWith('/films')) {
     return json({ error: 'forbidden' }, 403);
   }

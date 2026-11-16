@@ -1,7 +1,321 @@
-/* КиноПлёнка film page — bundled */
-const KP=(function(){const PROXY="/api";let useProxy=null;async function probeProxy(){if(useProxy!==null)return useProxy;try{const r=await fetch(PROXY+"/health");if(r.ok){const j=await r.json();useProxy=Boolean(j&&j.hasKey)}else useProxy=false}catch(_){useProxy=false}return useProxy}async function request(path){if(await probeProxy()){const res=await fetch(PROXY+path);if(res.status===404){const e=new Error("NOT_FOUND");e.code="NOT_FOUND";throw e}if(res.status===503){const e=new Error("NO_KEY");e.code="NO_KEY";throw e}if(!res.ok){const e=new Error("HTTP_"+res.status);e.code="HTTP";throw e}return res.json()}const e=new Error("NO_KEY");e.code="NO_KEY";throw e}return{film:id=>request("/films/"+id),search:(q,p=1)=>request("/films?keyword="+encodeURIComponent(q)+"&page="+p),top:(t="TOP_POPULAR_ALL",p=1)=>request("/films/collections?type="+encodeURIComponent(t)+"&page="+p),similars:id=>request("/films/"+id+"/similars"),videos:id=>request("/films/"+id+"/videos")}})();
-function escapeHtml(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML}
-function renderFilmCard(film){const id=film.kinopoiskId||film.filmId||film.id;const title=film.nameRu||film.nameOriginal||film.nameEn||"Без названия";const year=film.year||"";const rating=film.ratingKinopoisk||film.rating||"";const poster=film.posterUrlPreview||film.posterUrl||"";const ratingHtml=rating?'<span class="card__rating">'+rating+"</span>":"";return'<a class="card" href="film.html?id='+id+'"><div class="card__poster">'+(poster?'<img src="'+poster+'" alt="" loading="lazy">':'<div class="card__no-poster">Нет постера</div>')+ratingHtml+'</div><div class="card__body"><div class="card__title">'+escapeHtml(title)+'</div><div class="card__year">'+year+"</div></div></a>"}
-(function(){const hf=document.getElementById("headerSearch"),hi=document.getElementById("headerInput");if(hf&&hi)hf.addEventListener("submit",e=>{e.preventDefault();const q=hi.value.trim();if(!q)return;/^\d+$/.test(q)?location.href="film.html?id="+q:location.href="./?q="+encodeURIComponent(q)})})();
-(function(){"use strict";const params=new URLSearchParams(location.search),id=params.get("id");const loading=document.getElementById("filmLoading"),content=document.getElementById("filmContent"),errorEl=document.getElementById("filmError");const poster=document.getElementById("filmPoster"),titleEl=document.getElementById("filmTitle"),originalEl=document.getElementById("filmOriginal"),metaEl=document.getElementById("filmMeta"),ratingEl=document.getElementById("filmRating"),genresEl=document.getElementById("filmGenres"),descEl=document.getElementById("filmDescription"),trailerBtn=document.getElementById("filmTrailer"),kpBtn=document.getElementById("filmKp"),similarSection=document.getElementById("similarSection"),similarGrid=document.getElementById("similarGrid"),player=document.getElementById("player");function showError(msg){loading.hidden=true;content.hidden=true;errorEl.hidden=false;errorEl.innerHTML=msg}if(!id){showError('Не указан ID фильма. <a href="./">На главную</a>');return}async function load(){try{const data=await KP.film(id);const title=data.nameRu||data.nameOriginal||data.nameEn||"Без названия";document.title=title+" — КиноПлёнка";titleEl.textContent=title;if(data.nameOriginal&&data.nameOriginal!==title){originalEl.textContent=data.nameOriginal;originalEl.hidden=false}else originalEl.hidden=true;const bits=[];if(data.year)bits.push(data.year);if(data.type==="TV_SERIES"||data.type==="MINI_SERIES")bits.push("сериал");else if(data.type==="FILM")bits.push("фильм");if(data.filmLength)bits.push(data.filmLength+" мин");metaEl.textContent=bits.join(" · ");if(data.ratingKinopoisk){ratingEl.textContent="★ "+data.ratingKinopoisk+(data.ratingKinopoiskVoteCount?" ("+data.ratingKinopoiskVoteCount+")":"");ratingEl.hidden=false}else if(data.ratingImdb){ratingEl.textContent="IMDb "+data.ratingImdb;ratingEl.hidden=false}const genres=(data.genres||[]).map(g=>g.genre).join(", ");const countries=(data.countries||[]).map(c=>c.country).join(", ");genresEl.textContent=[genres,countries].filter(Boolean).join(" · ");descEl.textContent=data.description||data.shortDescription||"";const posterUrl=data.posterUrl||data.posterUrlPreview;if(posterUrl){poster.src=posterUrl;poster.alt=title;poster.onerror=function(){this.style.display="none"}}kpBtn.href="https://www.kinopoisk.ru/film/"+id+"/";try{const vids=await KP.videos(id);const yt=(vids.items||[]).find(v=>v.site==="YOUTUBE"&&v.url);if(yt){let u=yt.url;if(u.includes("youtu.be/"))u="https://www.youtube.com/watch?v="+u.split("youtu.be/")[1];trailerBtn.href=u;trailerBtn.hidden=false}}catch(_){}player.innerHTML="";const ins=document.createElement("ins");ins.setAttribute("data-publisher-id","679962206");ins.setAttribute("data-type","kp");ins.setAttribute("data-id",id);player.appendChild(ins);player.dataset.kinopoiskId=id;player.dataset.title=title;loading.hidden=true;content.hidden=false;try{const sim=await KP.similars(id);const list=(sim.items||[]).slice(0,12);if(list.length){similarGrid.innerHTML=list.map(renderFilmCard).join("");similarSection.hidden=false}}catch(_){}}catch(e){if(e.code==="NO_KEY")showError('API не настроен. <a href="./">На главную</a>');else if(e.code==="NOT_FOUND")showError('Фильм не найден. <a href="./">На главную</a>');else showError('Ошибка загрузки. <a href="./">На главную</a>')}}load()})();
-(function(){var box=document.getElementById("liveinternet-counter");if(!box)return;box.innerHTML='<a href="https://www.liveinternet.ru/click" target="_blank" rel="noopener"><img id="licnt044E" width="88" height="31" style="border:0;vertical-align:middle" title="LiveInternet" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7" alt=""/></a>';(function(d,s){var img=d.getElementById("licnt044E");if(!img)return;img.src="https://counter.yadro.ru/hit?t52.6;r"+escape(d.referrer)+(typeof s==="undefined"?"":";s"+s.width+"*"+s.height+"*"+(s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)})();
+/* КиноПлёнка film page — XSS-hardened */
+(function () {
+  'use strict';
+
+  const PROXY = '/api';
+  let useProxy = null;
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function safeId(v) {
+    const s = String(v == null ? '' : v).trim();
+    return /^\d{1,12}$/.test(s) ? s : '';
+  }
+
+  function safeHttpUrl(u) {
+    if (!u || typeof u !== 'string') return '';
+    try {
+      const url = new URL(u, location.origin);
+      if (url.protocol !== 'https:' && url.protocol !== 'http:') return '';
+      return url.href;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function safeYoutubeUrl(u) {
+    const href = safeHttpUrl(u);
+    if (!href) return '';
+    try {
+      const url = new URL(href);
+      const host = url.hostname.replace(/^www\./, '');
+      if (
+        host === 'youtube.com' ||
+        host === 'm.youtube.com' ||
+        host === 'youtu.be'
+      ) {
+        return href;
+      }
+    } catch (_) {}
+    return '';
+  }
+
+  function safeText(v, max) {
+    const s = String(v == null ? '' : v).replace(/[\u0000-\u001F\u007F]/g, '');
+    return max ? s.slice(0, max) : s;
+  }
+
+  async function probeProxy() {
+    if (useProxy !== null) return useProxy;
+    try {
+      const r = await fetch(PROXY + '/health');
+      if (r.ok) {
+        const j = await r.json();
+        useProxy = Boolean(j && j.hasKey);
+      } else useProxy = false;
+    } catch (_) {
+      useProxy = false;
+    }
+    return useProxy;
+  }
+
+  async function request(path) {
+    if (!(await probeProxy())) {
+      const e = new Error('NO_KEY');
+      e.code = 'NO_KEY';
+      throw e;
+    }
+    const res = await fetch(PROXY + path);
+    if (res.status === 404) {
+      const e = new Error('NOT_FOUND');
+      e.code = 'NOT_FOUND';
+      throw e;
+    }
+    if (res.status === 503) {
+      const e = new Error('NO_KEY');
+      e.code = 'NO_KEY';
+      throw e;
+    }
+    if (!res.ok) {
+      const e = new Error('HTTP_' + res.status);
+      e.code = 'HTTP';
+      throw e;
+    }
+    return res.json();
+  }
+
+  const KP = {
+    film: (id) => request('/films/' + safeId(id)),
+    similars: (id) => request('/films/' + safeId(id) + '/similars'),
+    videos: (id) => request('/films/' + safeId(id) + '/videos')
+  };
+
+  function renderFilmCard(film) {
+    const id = safeId(film.kinopoiskId || film.filmId || film.id);
+    if (!id) return '';
+    const title = safeText(
+      film.nameRu || film.nameOriginal || film.nameEn || 'Без названия',
+      200
+    );
+    const year = safeText(film.year, 12).replace(/[^0-9\-–]/g, '');
+    let rating = film.ratingKinopoisk || film.rating || '';
+    if (rating !== '' && rating != null) {
+      const n = Number(rating);
+      rating = Number.isFinite(n) ? String(n) : '';
+    } else rating = '';
+    const poster = safeHttpUrl(film.posterUrlPreview || film.posterUrl || '');
+    const ratingHtml = rating
+      ? '<span class="card__rating">' + escapeHtml(rating) + '</span>'
+      : '';
+    const img = poster
+      ? '<img src="' + escapeHtml(poster) + '" alt="" loading="lazy" referrerpolicy="no-referrer">'
+      : '<div class="card__no-poster">Нет постера</div>';
+    return (
+      '<a class="card" href="film.html?id=' +
+      encodeURIComponent(id) +
+      '"><div class="card__poster">' +
+      img +
+      ratingHtml +
+      '</div><div class="card__body"><div class="card__title">' +
+      escapeHtml(title) +
+      '</div><div class="card__year">' +
+      escapeHtml(year) +
+      '</div></div></a>'
+    );
+  }
+
+  const hf = document.getElementById('headerSearch');
+  const hi = document.getElementById('headerInput');
+  if (hf && hi) {
+    hf.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const q = hi.value.trim().slice(0, 200);
+      if (!q) return;
+      if (/^\d{1,12}$/.test(q)) location.href = 'film.html?id=' + encodeURIComponent(q);
+      else location.href = './?q=' + encodeURIComponent(q);
+    });
+  }
+
+  const rawId = new URLSearchParams(location.search).get('id');
+  const id = safeId(rawId);
+
+  const loading = document.getElementById('filmLoading');
+  const content = document.getElementById('filmContent');
+  const errorEl = document.getElementById('filmError');
+  const poster = document.getElementById('filmPoster');
+  const titleEl = document.getElementById('filmTitle');
+  const originalEl = document.getElementById('filmOriginal');
+  const metaEl = document.getElementById('filmMeta');
+  const ratingEl = document.getElementById('filmRating');
+  const genresEl = document.getElementById('filmGenres');
+  const descEl = document.getElementById('filmDescription');
+  const trailerBtn = document.getElementById('filmTrailer');
+  const kpBtn = document.getElementById('filmKp');
+  const similarSection = document.getElementById('similarSection');
+  const similarGrid = document.getElementById('similarGrid');
+  const player = document.getElementById('player');
+
+  function showError(msg) {
+    loading.hidden = true;
+    content.hidden = true;
+    errorEl.hidden = false;
+    errorEl.textContent = '';
+    const p = document.createElement('span');
+    p.textContent = msg + ' ';
+    const a = document.createElement('a');
+    a.href = './';
+    a.textContent = 'На главную';
+    errorEl.appendChild(p);
+    errorEl.appendChild(a);
+  }
+
+  if (!id) {
+    showError('Не указан или неверный ID фильма.');
+    return;
+  }
+
+  async function load() {
+    try {
+      const data = await KP.film(id);
+      const title = safeText(
+        data.nameRu || data.nameOriginal || data.nameEn || 'Без названия',
+        300
+      );
+      document.title = title + ' — КиноПлёнка';
+      titleEl.textContent = title;
+
+      if (data.nameOriginal && data.nameOriginal !== title) {
+        originalEl.textContent = safeText(data.nameOriginal, 300);
+        originalEl.hidden = false;
+      } else originalEl.hidden = true;
+
+      const bits = [];
+      if (data.year) bits.push(safeText(data.year, 12));
+      if (data.type === 'TV_SERIES' || data.type === 'MINI_SERIES') bits.push('сериал');
+      else if (data.type === 'FILM') bits.push('фильм');
+      if (data.filmLength) bits.push(String(parseInt(data.filmLength, 10) || '') + ' мин');
+      metaEl.textContent = bits.filter(Boolean).join(' · ');
+
+      if (data.ratingKinopoisk != null && Number.isFinite(Number(data.ratingKinopoisk))) {
+        ratingEl.textContent =
+          '★ ' +
+          data.ratingKinopoisk +
+          (data.ratingKinopoiskVoteCount
+            ? ' (' + parseInt(data.ratingKinopoiskVoteCount, 10) + ')'
+            : '');
+        ratingEl.hidden = false;
+      } else if (data.ratingImdb != null && Number.isFinite(Number(data.ratingImdb))) {
+        ratingEl.textContent = 'IMDb ' + data.ratingImdb;
+        ratingEl.hidden = false;
+      }
+
+      const genres = (data.genres || [])
+        .map(function (g) {
+          return safeText(g.genre, 40);
+        })
+        .filter(Boolean)
+        .join(', ');
+      const countries = (data.countries || [])
+        .map(function (c) {
+          return safeText(c.country, 40);
+        })
+        .filter(Boolean)
+        .join(', ');
+      genresEl.textContent = [genres, countries].filter(Boolean).join(' · ');
+
+      descEl.textContent = safeText(data.description || data.shortDescription || '', 4000);
+
+      const posterUrl = safeHttpUrl(data.posterUrl || data.posterUrlPreview);
+      if (posterUrl) {
+        poster.src = posterUrl;
+        poster.alt = title;
+        poster.referrerPolicy = 'no-referrer';
+        poster.onerror = function () {
+          this.removeAttribute('src');
+          this.style.display = 'none';
+        };
+      }
+
+      kpBtn.href = 'https://www.kinopoisk.ru/film/' + encodeURIComponent(id) + '/';
+      kpBtn.rel = 'noopener noreferrer';
+
+      try {
+        const vids = await KP.videos(id);
+        const yt = (vids.items || []).find(function (v) {
+          return v.site === 'YOUTUBE' && v.url;
+        });
+        if (yt) {
+          let u = yt.url;
+          if (String(u).indexOf('youtu.be/') !== -1) {
+            u =
+              'https://www.youtube.com/watch?v=' +
+              String(u).split('youtu.be/')[1].split(/[?&#]/)[0];
+          }
+          const safe = safeYoutubeUrl(u);
+          if (safe) {
+            trailerBtn.href = safe;
+            trailerBtn.rel = 'noopener noreferrer';
+            trailerBtn.hidden = false;
+          }
+        }
+      } catch (_) {}
+
+      if (player) {
+        player.innerHTML =
+          '<div class="player__placeholder">' +
+          '<span class="player__icon">▶</span>' +
+          '<p>Плеер</p>' +
+          '<p class="player__hint">Слот для легального контента</p>' +
+          '</div>';
+        player.dataset.kinopoiskId = id;
+        player.dataset.title = title;
+      }
+
+      loading.hidden = true;
+      content.hidden = false;
+
+      try {
+        const sim = await KP.similars(id);
+        const list = (sim.items || []).slice(0, 12);
+        if (list.length && similarGrid) {
+          similarGrid.innerHTML = list.map(renderFilmCard).filter(Boolean).join('');
+          similarSection.hidden = false;
+        }
+      } catch (_) {}
+    } catch (e) {
+      if (e.code === 'NO_KEY') showError('API не настроен.');
+      else if (e.code === 'NOT_FOUND') showError('Фильм не найден.');
+      else showError('Ошибка загрузки.');
+    }
+  }
+
+  load();
+
+  var box = document.getElementById('liveinternet-counter');
+  if (box) {
+    box.innerHTML =
+      '<a href="https://www.liveinternet.ru/click" target="_blank" rel="noopener noreferrer">' +
+      '<img id="licnt044E" width="88" height="31" style="border:0;vertical-align:middle" ' +
+      'title="LiveInternet" alt="" ' +
+      'src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"/></a>';
+    var img = document.getElementById('licnt044E');
+    if (img) {
+      img.src =
+        'https://counter.yadro.ru/hit?t52.6;r' +
+        encodeURIComponent(document.referrer || '') +
+        ';u' +
+        encodeURIComponent(location.href) +
+        ';h' +
+        encodeURIComponent((document.title || '').slice(0, 150)) +
+        ';' +
+        Math.random();
+    }
+  }
+})();
