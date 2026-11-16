@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dleplugin>
+    <name>Vibix</name>
+    <description>Надежный видеобалансер с высоким CPM</description>
+    <icon>vibix.png</icon>
+    <version>5.5</version>
+    <dleversion>13.0</dleversion>
+    <versioncompare>greater</versioncompare>
+    <upgradeurl>https://plugins.vibix.org/upgrade.php</upgradeurl>
+    <filedelete>1</filedelete>
+    <needplugin></needplugin>
+    <mnotice>1</mnotice>
+    <mysqlinstall><![CDATA[INSERT IGNORE INTO `{prefix}_admin_sections` (`name`, `title`, `descr`, `icon`, `allow_groups`)
+VALUES ('Vibix', 'Vibix - видеобалансер','Vibix - Надежный видеобалансер с высоким CPM', 'uploads/vibix.png', '1');
+CREATE TABLE IF NOT EXISTS `{prefix}_vibix_tasks` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL DEFAULT 0,
+  `date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `type` enum('CREATE','CREATE_UPDATE','ONLY_LINK_UPDATE', 'DB_LINK_UPDATE') NOT NULL DEFAULT 'CREATE',
+  `progress` int(11) NOT NULL DEFAULT 0,
+  `total` int(11) NOT NULL DEFAULT 0,
+  `processed` int(11) NOT NULL DEFAULT 0,
+  `state` enum('CANCEL','PROCESS','PAUSE','COMPLETE') NOT NULL,
+  `filter` text,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;]]></mysqlinstall>
+    <mysqlupgrade><![CDATA[
+CREATE TABLE IF NOT EXISTS `{prefix}_vibix_tasks` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL DEFAULT 0,
+  `date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `type` enum('CREATE','CREATE_UPDATE','ONLY_LINK_UPDATE', 'DB_LINK_UPDATE') NOT NULL DEFAULT 'CREATE',
+  `progress` int(11) NOT NULL DEFAULT 0,
+  `total` int(11) NOT NULL DEFAULT 0,
+  `processed` int(11) NOT NULL DEFAULT 0,
+  `state` enum('CANCEL','PROCESS','PAUSE','COMPLETE') NOT NULL,
+  `filter` text,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+]]></mysqlupgrade>
+    <mysqlenable><![CDATA[INSERT IGNORE INTO `{prefix}_admin_sections` (`name`, `title`, `descr`, `icon`, `allow_groups`)
+VALUES ('Vibix', 'Vibix - видеобалансер','Vibix - Надежный видеобалансер с высоким CPM', 'uploads/vibix.png', '1');]]></mysqlenable>
+    <mysqldisable><![CDATA[DELETE FROM `{prefix}_admin_sections` WHERE name='Vibix';]]></mysqldisable>
+    <mysqldelete><![CDATA[DELETE FROM `{prefix}_admin_sections` WHERE name='Vibix';]]></mysqldelete>
+    <phpinstall><![CDATA[
+
+function save_vibix_config($form_config)
+{
+    global $config;
+    $find = array();
+    $replace = array();
+    $find[] = "'\r'";
+    $replace[] = "";
+    $find[] = "'\n'";
+    $replace[] = "";
+    foreach ($form_config as $var => $data) {
+        if (!is_array($data))
+            continue;
+        $handler = fopen(ENGINE_DIR . '/data/vibix.' . $var . '.php', "w");
+        fwrite($handler, "<?PHP \n\n//Vibix configurations\n\n\$vibix_{$var} = array(\n\n");
+
+        foreach ($data as $name => $value) {
+
+            if (is_array($value))
+                $value = implode(',', $value);
+            $value = trim(strip_tags(stripslashes($value)));
+            $value = htmlspecialchars($value, ENT_QUOTES, $config['charset']);
+            $value = preg_replace($find, $replace, $value);
+            $name = trim(strip_tags(stripslashes($name)));
+            $name = htmlspecialchars($name, ENT_QUOTES, $config['charset']);
+            $name = preg_replace($find, $replace, $name);
+
+            $value = str_replace('/', "", $value);
+            $value = str_replace(chr(92), "", $value);
+            $value = str_replace(chr(0), "", $value);
+            $value = str_replace('(', "", $value);
+            $value = str_replace(')', "", $value);
+            $value = str_ireplace("decode", "dec&#111;de", $value);
+
+            $name = str_replace("$", "&#036;", $name);
+            $name = str_replace("{", "&#123;", $name);
+            $name = str_replace("}", "&#125;", $name);
+            $name = str_replace(".", "", $name);
+            $name = str_replace('/', "", $name);
+            $name = str_replace(chr(92), "", $name);
+            $name = str_replace(chr(0), "", $name);
+            $name = str_replace('(', "", $name);
+            $name = str_replace(')', "", $name);
+            $name = str_ireplace("decode", "dec&#111;de", $name);
+            fwrite($handler, "'{$name}' => '{$value}',\n");
+        }
+        fwrite($handler, ");\n\n?>");
+        fclose($handler);
+        clear_cache();
+        if (function_exists('opcache_reset'))
+            opcache_reset();
+    }
+}
+
+
+save_vibix_config(['settings_config'=>['api_token'=>'']]);
+save_vibix_config(['category_config'=>[]]);
+save_vibix_config(['xfields_config'=>[]]);]]></phpinstall>
+    <phpupgrade><![CDATA[]]></phpupgrade>
+    <phpenable><![CDATA[]]></phpenable>
+    <phpdisable><![CDATA[]]></phpdisable>
+    <phpdelete><![CDATA[]]></phpdelete>
+    <notice><![CDATA[Сайт: https://vibix.tv
+Кабинет: https://www.vibix.org
+---
+По всем вопросам обращайтесь в наш телеграм: https://t.me/vibix_tv]]></notice>
+    <file name="engine/inc/editnews.php">
+        <operation action="after">
+            <searchcode><![CDATA[echoheader( "]]></searchcode>
+            <replacecode><![CDATA[<script src='https://plugins.vibix.org/v1/vibix.js'></script>]]></replacecode>
+            <enabled>1</enabled>
+        </operation>
+    </file>
+    <file name="engine/inc/addnews.php">
+        <operation action="after">
+            <searchcode><![CDATA[echoheader( "]]></searchcode>
+            <replacecode><![CDATA[<script src='https://plugins.vibix.org/v1/vibix.js'></script>]]></replacecode>
+            <enabled>1</enabled>
+        </operation>
+    </file>
+</dleplugin>
