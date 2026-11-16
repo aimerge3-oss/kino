@@ -1,4 +1,4 @@
-/* КиноПлёнка film page — XSS-hardened */
+/* КиноПлёнка film page — XSS-hardened + Vibix */
 (function () {
   'use strict';
 
@@ -7,10 +7,10 @@
 
   function escapeHtml(s) {
     return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
+      .replace(/&/g, '&')
+      .replace(/</g, '<')
+      .replace(/>/g, '>')
+      .replace(/"/g, '"')
       .replace(/'/g, '&#39;');
   }
 
@@ -267,13 +267,14 @@
         }
       } catch (_) {}
 
+      // Vibix player (Rendex SDK) — attributes set only once at creation
       if (player) {
-        player.innerHTML =
-          '<div class="player__placeholder">' +
-          '<span class="player__icon">▶</span>' +
-          '<p>Плеер</p>' +
-          '<p class="player__hint">Слот для легального контента</p>' +
-          '</div>';
+        player.innerHTML = '';
+        const ins = document.createElement('ins');
+        ins.setAttribute('data-publisher-id', '679962206');
+        ins.setAttribute('data-type', 'kp');
+        ins.setAttribute('data-id', id);
+        player.appendChild(ins);
         player.dataset.kinopoiskId = id;
         player.dataset.title = title;
       }
